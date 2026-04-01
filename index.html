@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>KR Arts Payslip</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
+
+<style>
+body{
+    font-family: Arial;
+    background:#eef2f7;
+}
+
+/* Saved Button */
+.saved-btn{
+    position:fixed;
+    top:20px;
+    right:20px;
+    background:#2f4f6f;
+    color:white;
+    padding:10px;
+    border-radius:10px;
+    cursor:pointer;
+}
+
+#savedList{
+    position:fixed;
+    right:0;
+    top:60px;
+    width:300px;
+    height:80%;
+    background:white;
+    border-left:3px solid #2f4f6f;
+    display:none;
+    overflow:auto;
+    padding:10px;
+}
+
+/* Container */
+.container{
+    width:900px;
+    margin:auto;
+}
+
+/* Form */
+.form{
+    background:white;
+    padding:15px;
+    border-radius:10px;
+}
+
+input, select{
+    padding:8px;
+    margin:5px;
+    width:180px;
+}
+
+/* Payslip */
+.payslip{
+    margin-top:20px;
+    border:2px solid #2f4f6f;
+    background:white;
+}
+
+.header{
+    background:#2f4f6f;
+    color:white;
+    text-align:center;
+    padding:10px;
+    font-size:20px;
+    font-weight:bold;
+}
+
+.sub-header{
+    background:#3f628c;
+    color:white;
+    text-align:center;
+    padding:8px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+td,th{
+    border:1px solid #2f4f6f;
+    padding:8px;
+}
+
+.section{
+    background:#2f4f6f;
+    color:white;
+}
+
+.amount{
+    text-align:right;
+}
+
+button{
+    margin:5px;
+    padding:10px;
+    background:#2f4f6f;
+    color:white;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+}
+
+/* PRINT ONLY SLIP */
+@media print {
+body *{ visibility:hidden; }
+#slip, #slip *{ visibility:visible; }
+#slip{
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+}
+}
+</style>
+</head>
+
+<body>
+
+<div class="saved-btn" onclick="toggleSaved()">💾 Saved</div>
+<div id="savedList"></div>
+
+<div class="container">
+
+<div class="form">
+
+<!-- STAFF -->
+<select id="staff" onchange="fillStaff()">
+<option value="">-- Select Staff --</option>
+<option>K.Rammorthy</option>
+<option>S.Sivanandhini</option>
+<option>Sahana Barveen</option>
+<option>T.Parvathy</option>
+<option>Venkateshwari</option>
+<option>Chandra</option>
+<option>Gnanasakthi</option>
+<option>Rajiv</option>
+<option>Kiruba</option>
+<option>Banumathi</option>
+<option>Shanmuga Sundari</option>
+<option>Bakiyalakshmi</option>
+<option>Kirubaa</option>
+<option>Kavitha</option>
+<option>Hinduja</option>
+<option>Dinesh Babu</option>
+</select>
+
+<input id="id" placeholder="Employee ID" readonly>
+<input id="dept" placeholder="Department" readonly>
+<input id="desg" placeholder="Designation" readonly>
+
+<input type="month" id="month">
+
+<br>
+
+<input id="totalDays" type="number" placeholder="Total Days">
+<input id="presentDays" type="number" placeholder="Present Days">
+
+<br>
+
+<input id="basic" type="number" placeholder="Basic">
+<input id="hra" type="number" placeholder="HRA">
+<input id="da" type="number" placeholder="DA">
+<input id="other" type="number" placeholder="Other">
+<input id="deduction" type="number" placeholder="Deduction">
+
+<br>
+
+<button onclick="generate()">Generate</button>
+<button onclick="printSlip()">Print</button>
+<button onclick="downloadPDF()">PDF</button>
+<button onclick="saveData()">Save</button>
+
+</div>
+
+<div id="slip" class="payslip"></div>
+
+</div>
+
+<script>
+
+/* STAFF DATA */
+const staffData = {
+"K.Rammorthy": {id:"01", dept:"Computer Science", desg:"HOD"},
+"S.Sivanandhini": {id:"002", dept:"Computer Science", desg:"Assistant Professor"},
+"Sahana Barveen": {id:"001", dept:"Computer Science", desg:"Assistant Professor"},
+"T.Parvathy": {id:"01", dept:"Tamil", desg:"HOD"},
+"Venkateshwari": {id:"001", dept:"Tamil", desg:"Assistant Professor"},
+"Chandra": {id:"002", dept:"Tamil", desg:"Assistant Professor"},
+"Gnanasakthi": {id:"003", dept:"Tamil", desg:"Assistant Professor"},
+"Rajiv": {id:"01", dept:"English", desg:"HOD"},
+"Kiruba": {id:"001", dept:"English", desg:"Assistant Professor"},
+"Banumathi": {id:"002", dept:"English", desg:"Assistant Professor"},
+"Shanmuga Sundari": {id:"01", dept:"Commerce", desg:"HOD"},
+"Bakiyalakshmi": {id:"001", dept:"Commerce", desg:"Assistant Professor"},
+"Kirubaa": {id:"002", dept:"Commerce", desg:"Assistant Professor"},
+"Kavitha": {id:"01", dept:"Home Science", desg:"HOD"},
+"Hinduja": {id:"01", dept:"Chemistry", desg:"HOD"},
+"Dinesh Babu": {id:"01", dept:"Aviation", desg:"HOD"}
+};
+
+/* AUTO FILL */
+function fillStaff(){
+let name = document.getElementById("staff").value;
+if(!name) return;
+let data = staffData[name];
+document.getElementById("id").value = data.id;
+document.getElementById("dept").value = data.dept;
+document.getElementById("desg").value = data.desg;
+}
+
+/* GENERATE */
+function generate(){
+
+let name = document.getElementById("staff").value;
+let id = document.getElementById("id").value;
+let dept = document.getElementById("dept").value;
+let desg = document.getElementById("desg").value;
+let month = document.getElementById("month").value;
+
+let total = +document.getElementById("totalDays").value || 0;
+let present = +document.getElementById("presentDays").value || 0;
+let leave = total - present;
+
+let basic = +document.getElementById("basic").value || 0;
+let hra = +document.getElementById("hra").value || 0;
+let da = +document.getElementById("da").value || 0;
+let other = +document.getElementById("other").value || 0;
+let deduction = +document.getElementById("deduction").value || 0;
+
+let gross = basic + hra + da + other;
+let perDay = gross / total || 0;
+let earned = perDay * present;
+let net = earned - deduction;
+
+document.getElementById("slip").innerHTML = `
+<div class="header">KR ARTS AND SCIENCE COLLEGE</div>
+<div class="sub-header">Salary Slip</div>
+
+<table>
+
+<tr class="section"><td colspan="4">Employee Details</td></tr>
+
+<tr><td>Name</td><td>${name}</td><td>ID</td><td>${id}</td></tr>
+<tr><td>Department</td><td>${dept}</td><td>Designation</td><td>${desg}</td></tr>
+<tr><td>Month</td><td>${month}</td><td>Total Days</td><td>${total}</td></tr>
+<tr><td>Present</td><td>${present}</td><td>Leave</td><td>${leave}</td></tr>
+
+<tr class="section"><td colspan="2">Earnings</td><td colspan="2">Deductions</td></tr>
+<tr class="section"><td>Head</td><td>Amount</td><td>Head</td><td>Amount</td></tr>
+
+<tr><td>Basic</td><td class="amount">₹${basic}</td><td>Total Deduction</td><td class="amount">₹${deduction}</td></tr>
+<tr><td>HRA</td><td class="amount">₹${hra}</td><td></td><td></td></tr>
+<tr><td>DA</td><td class="amount">₹${da}</td><td></td><td></td></tr>
+<tr><td>Other</td><td class="amount">₹${other}</td><td></td><td></td></tr>
+
+<tr class="section"><td>Total</td><td class="amount">₹${gross}</td><td></td><td></td></tr>
+<tr class="section"><td colspan="2">Net Salary</td><td colspan="2" class="amount">₹${net.toFixed(2)}</td></tr>
+
+</table>
+`;
+}
+
+/* PRINT */
+function printSlip(){
+window.print();
+}
+
+/* PDF */
+function downloadPDF(){
+html2pdf().from(document.getElementById("slip")).save();
+}
+
+/* SAVE WITH NAME */
+function saveData(){
+
+let name = document.getElementById("staff").value;
+
+if(!name){
+alert("Select staff first!");
+return;
+}
+
+let data = document.getElementById("slip").innerHTML;
+
+let record = { name:name, data:data };
+
+localStorage.setItem(Date.now(), JSON.stringify(record));
+
+alert("Saved!");
+loadSaved();
+}
+
+/* TOGGLE SAVED */
+function toggleSaved(){
+let box = document.getElementById("savedList");
+box.style.display = box.style.display==="none"?"block":"none";
+loadSaved();
+}
+
+/* LOAD SAVED */
+function loadSaved(){
+let box = document.getElementById("savedList");
+box.innerHTML="<h3>Saved Payslips</h3>";
+
+for(let i=0;i<localStorage.length;i++){
+let key=localStorage.key(i);
+let record = JSON.parse(localStorage.getItem(key));
+
+box.innerHTML+=`
+<div style="border:1px solid #ccc;margin:5px;padding:5px;">
+<b>${record.name}</b><br>
+<button onclick="viewSaved('${key}')">View</button>
+</div>
+`;
+}
+}
+
+/* VIEW */
+function viewSaved(key){
+let record = JSON.parse(localStorage.getItem(key));
+document.getElementById("slip").innerHTML = record.data;
+}
+
+</script>
+
+</body>
+</html>
